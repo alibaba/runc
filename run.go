@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
+	"fmt"
+	"path/filepath"
+	"github.com/opencontainers/runc/prehook"
 )
 
 // default action is to start a container
@@ -73,6 +76,14 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		if err != nil {
 			return err
 		}
+
+		//pre hook
+		fmt.Printf("rootfs dir is %s\n", filepath.Join(context.String("bundle"), spec.Root.Path))
+		err = prehook.PreHook(&prehook.HookOptions{RootfsDir: filepath.Join(context.String("bundle"), spec.Root.Path), ID: context.Args().First()}, spec)
+		if err != nil{
+			return err
+		}
+
 		status, err := startContainer(context, spec, CT_ACT_RUN, nil)
 		if err == nil {
 			// exit with the container's exit status so any external supervisor is
