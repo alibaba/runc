@@ -5,7 +5,6 @@ import (
 
 	"github.com/urfave/cli"
 	"github.com/opencontainers/runc/prehook"
-	"path/filepath"
 	"fmt"
 )
 
@@ -67,8 +66,14 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		}
 
 		//pre hook
-		fmt.Printf("rootfs dir is %s\n", filepath.Join(context.String("bundle"), spec.Root.Path))
-		err = prehook.PreHook(&prehook.HookOptions{RootfsDir: filepath.Join(context.String("bundle"), spec.Root.Path), ID: context.Args().First()}, spec)
+		opt,err := prehook.CreateHookOptions(context, spec)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("rootfs dir is %s\n", opt.RootfsDir)
+
+		err = prehook.PreHook(opt, spec)
 		if err != nil{
 			return err
 		}
