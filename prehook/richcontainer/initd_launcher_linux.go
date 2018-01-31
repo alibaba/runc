@@ -14,7 +14,7 @@ import (
 
 
 const(
-	initdLauncherName = "init"
+	initdLauncherName = "sbin-init"
 	initBinPath = "/sbin/init"
 
 	defaultInitScriptPath = "/etc/rc.d/init.d/richContainer"
