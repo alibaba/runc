@@ -14,7 +14,7 @@ import (
 //use dumb-init as init process in container if not set launcher
 
 const(
-	dumbInitLauncherName = "dumbinit"
+	dumbInitLauncherName = "dumb-init"
 	dumbInitAppName = "dumb-init"
 
 	dumbInitRootfsPath = "/usr/bin/dumb-init"
