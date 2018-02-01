@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"fmt"
+	"os/exec"
 )
 
 
@@ -40,15 +41,6 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 		return err
 	}
 
-	//check has set rich container service
-	//ok,err := l.isSetRichContainerService(rootfs)
-	//if err != nil{
-	//	return err
-	//}
-	//
-	//if !ok{
-	//}
-
 	cmd := spec.Process.Args
 
 	config := &systemdConfig{
@@ -66,6 +58,25 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 
 	err = l.writeServiceFile(config, filepath.Join(rootfs, systemdServiceFilePath))
 	if err != nil{
+		return err
+	}
+
+
+	//link service to multi-user dir
+	currentDir,err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	defer os.Chdir(currentDir)
+
+	err = os.Chdir(filepath.Join(rootfs,"/etc/systemd/system/multi-user.target.wants"))
+	if err != nil {
+		return err
+	}
+
+	err = l.linkService("../richcontainer.service", "richcontainer.service")
+	if err != nil {
 		return err
 	}
 
@@ -165,5 +176,9 @@ func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath strin
 	}
 
 	return nil
+}
+
+func (l *systemdLauncher) linkService(serviceFilePath string, target string) error {
+	return exec.Command("ln","-s", serviceFilePath, target).Run()
 }
 
