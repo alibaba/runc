@@ -72,7 +72,8 @@ func GetDefaultLauncher() RichContainerLauncher {
 }
 
 const(
-	rich_mode_env = "ali_run_mode=common_vm"
+//	rich_mode_env = "ali_run_mode=common_vm"
+	rich_mode_env = "rich_mode=true"
 	rich_mode_launch_env = "rich_mode_launch_manner"
 	rich_mode_script = "initscript"
 )
