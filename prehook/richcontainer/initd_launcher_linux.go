@@ -178,6 +178,10 @@ func (l *initdLauncher) setRcLevel(rcDir string) error {
 			return err
 		}
 
+		if activeIndex < 0 {
+			continue
+		}
+
 		//create link to /etc/rc.d/init.d/richContainer
 		err = os.Chdir(dir)
 		if err != nil {
@@ -196,9 +200,15 @@ func (l *initdLauncher) setRcLevel(rcDir string) error {
 	return nil
 }
 
-//the function is to find active index in boot init
+//the function is to find active index in boot init, if return -1, means need not to set
 //it has some bugs if index is in (0,9) and names has (1,9)x prefix, but the start index is more than 50
 func (l *initdLauncher) getActiveIndex(names []string, startIndex int, endIndex int) (int, error) {
+	for _,name := range names {
+		if strings.HasSuffix(name, defaultInitScriptName) && strings.HasPrefix(name, "S"){
+			return -1, nil
+		}
+	}
+
 	for i:= startIndex; i <= endIndex; i ++ {
 		confict := false
 		for _,name := range names {
