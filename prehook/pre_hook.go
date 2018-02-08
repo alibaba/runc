@@ -3,8 +3,8 @@ package prehook
 //hook in pre create container
 
 import (
-	"sync"
 	"path/filepath"
+	"sync"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
@@ -14,36 +14,36 @@ type HookOptions struct {
 	//container rootfs path
 	RootfsDir string
 	//container id
-	ID        string
+	ID string
 }
 
 type HookFunc func(opt *HookOptions, spec *specs.Spec) error
 
 type HookRegistration struct {
-	Type		string
-	RunFunc		HookFunc
+	Type    string
+	RunFunc HookFunc
 }
 
-func RegisterPreHook(f *HookRegistration)  {
+func RegisterPreHook(f *HookRegistration) {
 	registerMutex.Lock()
 	defer registerMutex.Unlock()
 
-	if f.Type == ""{
+	if f.Type == "" {
 		panic("not set hook type")
 	}
 
 	hookRegistrations = append(hookRegistrations, f)
 }
 
-var(
+var (
 	hookRegistrations = []*HookRegistration{}
-	registerMutex = &sync.Mutex{}
+	registerMutex     = &sync.Mutex{}
 )
 
 func PreHook(opt *HookOptions, spec *specs.Spec) error {
-	for _,hook := range hookRegistrations{
+	for _, hook := range hookRegistrations {
 		err := hook.RunFunc(opt, spec)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	}
@@ -51,13 +51,13 @@ func PreHook(opt *HookOptions, spec *specs.Spec) error {
 	return nil
 }
 
-func CreateHookOptions(context* cli.Context, spec *specs.Spec) (*HookOptions,error) {
+func CreateHookOptions(context *cli.Context, spec *specs.Spec) (*HookOptions, error) {
 	rootfsPath := ""
 
-	if filepath.IsAbs(spec.Root.Path){
+	if filepath.IsAbs(spec.Root.Path) {
 		rootfsPath = spec.Root.Path
-	}else {
-		p,err := filepath.Abs(filepath.Join(context.String("bundle"), spec.Root.Path))
+	} else {
+		p, err := filepath.Abs(filepath.Join(context.String("bundle"), spec.Root.Path))
 		if err != nil {
 			return nil, err
 		}
@@ -67,6 +67,6 @@ func CreateHookOptions(context* cli.Context, spec *specs.Spec) (*HookOptions,err
 
 	return &HookOptions{
 		RootfsDir: rootfsPath,
-		ID: context.Args().First(),
-	},nil
+		ID:        context.Args().First(),
+	}, nil
 }

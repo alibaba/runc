@@ -1,8 +1,8 @@
 package richcontainer
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
@@ -10,19 +10,19 @@ import (
 	"github.com/opencontainers/runc/utils"
 )
 
-var(
+var (
 	log = utils.GetLogger()
 )
 
-func init()  {
+func init() {
 	prehook.RegisterPreHook(&prehook.HookRegistration{
 		Type: "richContainer",
 		RunFunc: func(opt *prehook.HookOptions, spec *specs.Spec) error {
-			if !isRichMode(spec){
+			if !isRichMode(spec) {
 				return nil
 			}
-			launcher,err := getRichModeLauncher(spec)
-			if err != nil{
+			launcher, err := getRichModeLauncher(spec)
+			if err != nil {
 				return err
 			}
 
@@ -32,25 +32,25 @@ func init()  {
 }
 
 type RichContainerLauncher interface {
-	Name()						      string
-	Launch(opt *prehook.HookOptions, spec *specs.Spec)    error
+	Name() string
+	Launch(opt *prehook.HookOptions, spec *specs.Spec) error
 }
 
 type richLauncherManager struct {
-	launchMapper		map[string]RichContainerLauncher
-	defaultLauncher		string
+	launchMapper    map[string]RichContainerLauncher
+	defaultLauncher string
 }
 
-var(
+var (
 	launcherManager = &richLauncherManager{
-		launchMapper:  map[string]RichContainerLauncher{},
+		launchMapper: map[string]RichContainerLauncher{},
 		//set default launch to dumpinit
 		defaultLauncher: dumbInitLauncherName,
 	}
 )
 
 func RegisterLauncher(launcher RichContainerLauncher) error {
-	_,ok := launcherManager.launchMapper[launcher.Name()]
+	_, ok := launcherManager.launchMapper[launcher.Name()]
 	if ok {
 		return fmt.Errorf("launcher %s has been register", launcher.Name())
 	}
@@ -78,15 +78,15 @@ func GetDefaultLauncher() RichContainerLauncher {
 	return nil
 }
 
-const(
-	richModeEnv = "rich_mode=true"
+const (
+	richModeEnv       = "rich_mode=true"
 	richModeLaunchEnv = "rich_mode_launch_manner"
-	rich_mode_script = "initscript"
+	rich_mode_script  = "initscript"
 )
 
 func isRichMode(spec *specs.Spec) bool {
 	envs := spec.Process.Env
-	for _,env := range envs{
+	for _, env := range envs {
 		if strings.TrimSpace(env) == richModeEnv {
 			return true
 		}
@@ -101,7 +101,7 @@ func getRichModeLauncher(spec *specs.Spec) (RichContainerLauncher, error) {
 
 	envs := spec.Process.Env
 
-	for _,env := range envs{
+	for _, env := range envs {
 		kvs := strings.Split(env, "=")
 		if len(kvs) == 2 {
 			if kvs[0] == richModeLaunchEnv {
@@ -111,17 +111,15 @@ func getRichModeLauncher(spec *specs.Spec) (RichContainerLauncher, error) {
 		}
 	}
 
-	if launcherName == ""{
+	if launcherName == "" {
 		launcher = GetDefaultLauncher()
-	}else {
+	} else {
 		launcher = GetLauncher(launcherName)
 	}
 
-	if launcher == nil{
+	if launcher == nil {
 		return nil, fmt.Errorf("not found rich container launcher %s", launcherName)
 	}
 
 	return launcher, nil
 }
-
-
