@@ -1,34 +1,32 @@
 package richcontainer
 
 import (
-	"path/filepath"
-	"os"
-	"strings"
-	"fmt"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/opencontainers/runc/prehook"
 )
 
-
-const(
+const (
 	initdLauncherName = "sbin-init"
-	initBinPath = "/sbin/init"
+	initBinPath       = "/sbin/init"
 
 	defaultInitScriptPath = "/etc/rc.d/init.d/richContainer"
 	defaultInitScriptName = "richContainer"
 )
 
-func init()  {
+func init() {
 	RegisterLauncher(&initdLauncher{})
 }
 
 type initdLauncher struct {
-
 }
 
 func (l *initdLauncher) Name() string {
@@ -39,9 +37,9 @@ func (l *initdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) error
 	rootfs := opt.RootfsDir
 
 	//check has /sbin/init
-	_,err := os.Stat(filepath.Join(rootfs, initBinPath))
-	if err != nil{
-		log.Errorf("stat /sbin/init error:%s",err.Error())
+	_, err := os.Stat(filepath.Join(rootfs, initBinPath))
+	if err != nil {
+		log.Errorf("stat /sbin/init error:%s", err.Error())
 		return err
 	}
 
@@ -69,13 +67,13 @@ func (l *initdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) error
 		return err
 	}
 
-	spec.Process.Args = []string {initBinPath}
+	spec.Process.Args = []string{initBinPath}
 
 	return nil
 }
 
 type initScriptConfig struct {
-	startCmd	string
+	startCmd string
 }
 
 const scriptDescription = `
@@ -129,12 +127,12 @@ func (l *initdLauncher) writeScript(filePath string, config *initScriptConfig) e
 	dir := filepath.Dir(filePath)
 
 	err := os.MkdirAll(dir, 0x755)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	f,err := os.OpenFile(filePath, os.O_CREATE | os.O_TRUNC | os.O_WRONLY, 0x755)
-	if err != nil{
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0x755)
+	if err != nil {
 		return err
 	}
 
@@ -154,37 +152,37 @@ func (l *initdLauncher) writeScript(filePath string, config *initScriptConfig) e
 
 //set runlevel 2-5 auto start
 func (l *initdLauncher) setRcLevel(rcDir string) error {
-	var(
+	var (
 		startIndex int = 60
-		endIndex int =99
+		endIndex   int = 99
 
 		rcStart int = 2
-		rcEnd int = 5
+		rcEnd   int = 5
 	)
 
-	currentDir,err := os.Getwd()
+	currentDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	defer os.Chdir(currentDir)
 
-	for i:= rcStart; i <= rcEnd; i ++ {
+	for i := rcStart; i <= rcEnd; i++ {
 		dir := filepath.Join(rcDir, fmt.Sprintf("rc%d.d", i))
-		fInfos,err := ioutil.ReadDir(dir)
+		fInfos, err := ioutil.ReadDir(dir)
 		if err != nil {
 			return err
 		}
 
-		names := []string {}
+		names := []string{}
 
-		for _,f := range fInfos {
-			if f.Mode() & os.ModeSymlink != 0 {
+		for _, f := range fInfos {
+			if f.Mode()&os.ModeSymlink != 0 {
 				names = append(names, f.Name())
 			}
 		}
 
-		activeIndex,err := l.getActiveIndex(names, startIndex, endIndex)
+		activeIndex, err := l.getActiveIndex(names, startIndex, endIndex)
 		if err != nil {
 			return err
 		}
@@ -214,15 +212,15 @@ func (l *initdLauncher) setRcLevel(rcDir string) error {
 //the function is to find active index in boot init, if return -1, means need not to set
 //it has some bugs if index is in (0,9) and names has (1,9)x prefix, but the start index is more than 50
 func (l *initdLauncher) getActiveIndex(names []string, startIndex int, endIndex int) (int, error) {
-	for _,name := range names {
-		if strings.HasSuffix(name, defaultInitScriptName) && strings.HasPrefix(name, "S"){
+	for _, name := range names {
+		if strings.HasSuffix(name, defaultInitScriptName) && strings.HasPrefix(name, "S") {
 			return -1, nil
 		}
 	}
 
-	for i:= startIndex; i <= endIndex; i ++ {
+	for i := startIndex; i <= endIndex; i++ {
 		confict := false
-		for _,name := range names {
+		for _, name := range names {
 			if strings.HasPrefix(name, fmt.Sprintf("K%d", i)) {
 				confict = true
 				break
@@ -234,7 +232,7 @@ func (l *initdLauncher) getActiveIndex(names []string, startIndex int, endIndex 
 			}
 		}
 
-		if !confict{
+		if !confict {
 			return i, nil
 		}
 	}
