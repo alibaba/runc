@@ -80,7 +80,7 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 
 		err = prehook.PreHook(opt, spec)
 		if err != nil {
-			log.Errorf("container %s,run prehook error:", opt.ID, err.Error())
+			log.Errorf("container %s,run prehook error:%s", opt.ID, err.Error())
 			return err
 		}
 
