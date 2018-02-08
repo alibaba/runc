@@ -8,7 +8,7 @@ import (
 
 const defaultLogPath = "/run/runc.log"
 
-var(
+var (
 	logger = NewLogger()
 )
 
@@ -17,8 +17,8 @@ func GetLogger() *logrus.Logger {
 }
 
 func NewLogger() *logrus.Logger {
-	f,err := os.OpenFile(defaultLogPath, os.O_CREATE | os.O_WRONLY | os.O_APPEND, 0x644)
-	if err != nil{
+	f, err := os.OpenFile(defaultLogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0x644)
+	if err != nil {
 		panic(err)
 	}
 
