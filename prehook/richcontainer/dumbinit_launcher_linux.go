@@ -1,14 +1,16 @@
 package richcontainer
 
 import (
-	"github.com/opencontainers/runc/prehook"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"os/exec"
 	"os"
 	"path/filepath"
 	"io"
 	"errors"
 	"fmt"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/opencontainers/runc/prehook"
 )
 
 //use dumb-init as init process in container if not set launcher

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	"fmt"
 	"github.com/opencontainers/runc/prehook"
 )
 
@@ -82,10 +81,11 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 			return err
 		}
 
-		fmt.Printf("rootfs dir is %s\n", opt.RootfsDir)
+		log.Infof("container %s,rootfs dir is %s\n", opt.ID ,opt.RootfsDir)
 
 		err = prehook.PreHook(opt, spec)
 		if err != nil{
+			log.Error(err.Error())
 			return err
 		}
 
