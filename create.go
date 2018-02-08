@@ -9,7 +9,7 @@ import (
 	"github.com/opencontainers/runc/utils"
 )
 
-var(
+var (
 	log = utils.GetLogger()
 )
 
@@ -71,16 +71,16 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		}
 
 		//pre hook
-		opt,err := prehook.CreateHookOptions(context, spec)
+		opt, err := prehook.CreateHookOptions(context, spec)
 		if err != nil {
 			return err
 		}
 
-		log.Infof("container %s,rootfs dir is %s\n",opt.ID, opt.RootfsDir)
+		log.Infof("container %s,rootfs dir is %s\n", opt.ID, opt.RootfsDir)
 
 		err = prehook.PreHook(opt, spec)
-		if err != nil{
-			log.Errorf("container %s,run prehook error:",opt.ID, err.Error())
+		if err != nil {
+			log.Errorf("container %s,run prehook error:", opt.ID, err.Error())
 			return err
 		}
 
