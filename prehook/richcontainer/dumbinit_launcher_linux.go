@@ -1,12 +1,12 @@
 package richcontainer
 
 import (
-	"os/exec"
-	"os"
-	"path/filepath"
-	"io"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
@@ -15,14 +15,14 @@ import (
 
 //use dumb-init as init process in container if not set launcher
 
-const(
+const (
 	dumbInitLauncherName = "dumb-init"
-	dumbInitAppName = "dumb-init"
+	dumbInitAppName      = "dumb-init"
 
 	dumbInitRootfsPath = "/usr/bin/dumb-init"
 )
 
-func init()  {
+func init() {
 	RegisterLauncher(&dumbInitLauncher{})
 }
 
@@ -38,24 +38,24 @@ func (l *dumbInitLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) er
 	fmt.Println("rich container mode in dumb-init mode")
 
 	//find dumb-init path in node
-	path,err := exec.LookPath(dumbInitAppName)
-	if err != nil{
+	path, err := exec.LookPath(dumbInitAppName)
+	if err != nil {
 		return err
 	}
 
-	abPath,err := filepath.Abs(path)
-	if err != nil{
+	abPath, err := filepath.Abs(path)
+	if err != nil {
 		return err
 	}
 
 	err = l.copyToContainerRootfs(abPath, opt.RootfsDir)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	//entrypoint
 	args := spec.Process.Args
-	if args == nil || len(args) == 0{
+	if args == nil || len(args) == 0 {
 		return errors.New("not set args")
 	}
 
@@ -71,41 +71,40 @@ func (l *dumbInitLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) er
 
 func (l *dumbInitLauncher) copyToContainerRootfs(binPath string, rootfs string) error {
 	rootfsBinPath := filepath.Join(rootfs, dumbInitRootfsPath)
-	_,err := os.Stat(rootfsBinPath)
+	_, err := os.Stat(rootfsBinPath)
 
 	if err == nil {
 		return nil
 	}
 
-	if !os.IsNotExist(err){
+	if !os.IsNotExist(err) {
 		return err
 	}
 
 	//mkdir /usr/bin
 	err = os.MkdirAll(filepath.Dir(rootfsBinPath), 0x0755)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	fin, err := os.Open(binPath)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	defer fin.Close()
 
-	fout,err := os.OpenFile(rootfsBinPath, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, 0x0755)
-	if err != nil{
+	fout, err := os.OpenFile(rootfsBinPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0x0755)
+	if err != nil {
 		return err
 	}
 
 	defer fout.Close()
 
-	_,err = io.Copy(fout, fin)
-	if err != nil{
+	_, err = io.Copy(fout, fin)
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
-
