@@ -1,12 +1,13 @@
 package prehook
 
-//hook in pre start container
+//hook in pre create container
 
 import (
-	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/urfave/cli"
 	"sync"
 	"path/filepath"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/urfave/cli"
 )
 
 type HookOptions struct {
