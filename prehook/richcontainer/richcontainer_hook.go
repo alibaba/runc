@@ -1,10 +1,17 @@
 package richcontainer
 
 import (
-	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/opencontainers/runc/prehook"
 	"strings"
 	"fmt"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/opencontainers/runc/prehook"
+	"github.com/opencontainers/runc/utils"
+)
+
+var(
+	log = utils.GetLogger()
 )
 
 func init()  {
@@ -72,16 +79,15 @@ func GetDefaultLauncher() RichContainerLauncher {
 }
 
 const(
-//	rich_mode_env = "ali_run_mode=common_vm"
-	rich_mode_env = "rich_mode=true"
-	rich_mode_launch_env = "rich_mode_launch_manner"
+	richModeEnv = "rich_mode=true"
+	richModeLaunchEnv = "rich_mode_launch_manner"
 	rich_mode_script = "initscript"
 )
 
 func isRichMode(spec *specs.Spec) bool {
 	envs := spec.Process.Env
 	for _,env := range envs{
-		if strings.TrimSpace(env) == rich_mode_env{
+		if strings.TrimSpace(env) == richModeEnv {
 			return true
 		}
 	}
@@ -98,7 +104,7 @@ func getRichModeLauncher(spec *specs.Spec) (RichContainerLauncher, error) {
 	for _,env := range envs{
 		kvs := strings.Split(env, "=")
 		if len(kvs) == 2 {
-			if kvs[0] == rich_mode_launch_env {
+			if kvs[0] == richModeLaunchEnv {
 				launcherName = kvs[1]
 				break
 			}

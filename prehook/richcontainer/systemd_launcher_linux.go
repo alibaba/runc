@@ -1,14 +1,16 @@
 package richcontainer
 
 import (
-	"github.com/opencontainers/runc/prehook"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"os"
 	"path/filepath"
 	"io/ioutil"
 	"strings"
 	"fmt"
 	"os/exec"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/opencontainers/runc/prehook"
 )
 
 
@@ -60,7 +62,6 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	if err != nil{
 		return err
 	}
-
 
 	//link service to multi-user dir
 	currentDir,err := os.Getwd()
@@ -179,6 +180,19 @@ func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath strin
 }
 
 func (l *systemdLauncher) linkService(serviceFilePath string, target string) error {
+	_,err := os.Stat(target)
+	if err == nil{
+		//if exists; remove it
+		e := os.Remove(target)
+		if e != nil{
+			return e
+		}
+	}
+
+	if err != nil && !os.IsNotExist(err){
+		return err
+	}
+
 	return exec.Command("ln","-s", serviceFilePath, target).Run()
 }
 

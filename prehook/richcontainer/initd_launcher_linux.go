@@ -1,8 +1,6 @@
 package richcontainer
 
 import (
-	"github.com/opencontainers/runc/prehook"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"path/filepath"
 	"os"
 	"strings"
@@ -10,6 +8,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"os/exec"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
+
+	"github.com/opencontainers/runc/prehook"
 )
 
 
@@ -33,27 +35,36 @@ func (l *initdLauncher) Name() string {
 	return initdLauncherName
 }
 
-//todo:
 func (l *initdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) error {
 	rootfs := opt.RootfsDir
 
 	//check has /sbin/init
 	_,err := os.Stat(filepath.Join(rootfs, initBinPath))
 	if err != nil{
+		log.Errorf("stat /sbin/init error:%s",err.Error())
 		return err
 	}
 
-	cmd := spec.Process.Args
-	config := &initScriptConfig{
-		startCmd: strings.Join(cmd, " "),
-	}
+	//cmd := spec.Process.Args
+	//config := &initScriptConfig{
+	//	startCmd: strings.Join(cmd, " "),
+	//}
+	//
+	//err = l.writeScript(filepath.Join(rootfs, defaultInitScriptPath), config)
+	//if err != nil{
+	//	return err
+	//}
+	//
+	//err = l.setRcLevel(filepath.Join(rootfs, "/etc/rc.d"))
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//spec.Process.Args = []string {initBinPath}
 
-	err = l.writeScript(filepath.Join(rootfs, defaultInitScriptPath), config)
-	if err != nil{
-		return err
-	}
-
-	err = l.setRcLevel(filepath.Join(rootfs, "/etc/rc.d"))
+	//call systemd launch
+	systedLauncher := &systemdLauncher{}
+	err = systedLauncher.Launch(opt, spec)
 	if err != nil {
 		return err
 	}
