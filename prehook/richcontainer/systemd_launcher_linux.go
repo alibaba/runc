@@ -1,32 +1,30 @@
 package richcontainer
 
 import (
-	"os"
-	"path/filepath"
-	"io/ioutil"
-	"strings"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/opencontainers/runc/prehook"
 )
 
-
-const(
-	systemdLauncherName = "systemd"
-	systemdBinRootfsPath = "/usr/lib/systemd/systemd"
+const (
+	systemdLauncherName       = "systemd"
+	systemdBinRootfsPath      = "/usr/lib/systemd/systemd"
 	systemdDefaultDescription = "rich container run mode"
-	systemdServiceFilePath = "/etc/systemd/system/richcontainer.service"
+	systemdServiceFilePath    = "/etc/systemd/system/richcontainer.service"
 )
 
-func init()  {
+func init() {
 	RegisterLauncher(&systemdLauncher{})
 }
 
 type systemdLauncher struct {
-
 }
 
 func (l *systemdLauncher) Name() string {
@@ -38,8 +36,8 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	rootfs := opt.RootfsDir
 
 	//check has systemd
-	_,err := os.Stat(filepath.Join(rootfs, systemdBinRootfsPath))
-	if err != nil{
+	_, err := os.Stat(filepath.Join(rootfs, systemdBinRootfsPath))
+	if err != nil {
 		return err
 	}
 
@@ -50,7 +48,7 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 			Description: systemdDefaultDescription,
 		},
 		service: &systemdServiceConfig{
-			Type: "simple",
+			Type:      "simple",
 			ExecStart: strings.Join(cmd, " "),
 		},
 		install: &systemdInstallConfig{
@@ -59,19 +57,19 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	}
 
 	err = l.writeServiceFile(config, filepath.Join(rootfs, systemdServiceFilePath))
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	//link service to multi-user dir
-	currentDir,err := os.Getwd()
+	currentDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	defer os.Chdir(currentDir)
 
-	err = os.Chdir(filepath.Join(rootfs,"/etc/systemd/system/multi-user.target.wants"))
+	err = os.Chdir(filepath.Join(rootfs, "/etc/systemd/system/multi-user.target.wants"))
 	if err != nil {
 		return err
 	}
@@ -88,29 +86,29 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 }
 
 type systemdUnitConfig struct {
-	Description	string
+	Description string
 }
 
 type systemdServiceConfig struct {
 	//type :simple
-	Type		string
-	ExecStart	string
+	Type      string
+	ExecStart string
 }
 
 type systemdInstallConfig struct {
 	//default multi-user.target
-	WantedBy	string
+	WantedBy string
 }
 
 type systemdConfig struct {
-	unit	*systemdUnitConfig
-	service	*systemdServiceConfig
-	install	*systemdInstallConfig
+	unit    *systemdUnitConfig
+	service *systemdServiceConfig
+	install *systemdInstallConfig
 }
 
-func (l *systemdLauncher) isSetRichContainerService(rootfs string) (bool,error) {
-	_,err := os.Stat(filepath.Join(rootfs, systemdServiceFilePath))
-	if err != nil{
+func (l *systemdLauncher) isSetRichContainerService(rootfs string) (bool, error) {
+	_, err := os.Stat(filepath.Join(rootfs, systemdServiceFilePath))
+	if err != nil {
 		if !os.IsNotExist(err) {
 			return false, err
 		}
@@ -118,29 +116,29 @@ func (l *systemdLauncher) isSetRichContainerService(rootfs string) (bool,error) 
 		return false, nil
 	}
 
-	data,err := ioutil.ReadFile(filepath.Join(rootfs, systemdServiceFilePath))
-	if err != nil{
+	data, err := ioutil.ReadFile(filepath.Join(rootfs, systemdServiceFilePath))
+	if err != nil {
 		return false, err
 	}
 
 	has := strings.Contains(string(data), fmt.Sprintf("Description=%s", systemdDefaultDescription))
 	if has {
-		return true,nil
+		return true, nil
 	}
 
-	return false,nil
+	return false, nil
 }
 
-func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath string)  error {
+func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath string) error {
 	dir := filepath.Dir(filePath)
 
 	err := os.MkdirAll(dir, 0x755)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	f,err := os.OpenFile(filePath, os.O_CREATE | os.O_TRUNC | os.O_WRONLY, 0x755)
-	if err != nil{
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0x755)
+	if err != nil {
 		return err
 	}
 
@@ -153,7 +151,7 @@ func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath strin
 		f.WriteString("\n")
 	}
 
-	if config.service != nil{
+	if config.service != nil {
 		f.WriteString("[Service]\n")
 
 		if config.service.Type != "" {
@@ -167,7 +165,7 @@ func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath strin
 		f.WriteString("\n")
 	}
 
-	if config.install != nil{
+	if config.install != nil {
 		f.WriteString("[Install]\n")
 
 		if config.install.WantedBy != "" {
@@ -180,19 +178,18 @@ func (l *systemdLauncher) writeServiceFile(config *systemdConfig, filePath strin
 }
 
 func (l *systemdLauncher) linkService(serviceFilePath string, target string) error {
-	_,err := os.Stat(target)
-	if err == nil{
+	_, err := os.Stat(target)
+	if err == nil {
 		//if exists; remove it
 		e := os.Remove(target)
-		if e != nil{
+		if e != nil {
 			return e
 		}
 	}
 
-	if err != nil && !os.IsNotExist(err){
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	return exec.Command("ln","-s", serviceFilePath, target).Run()
+	return exec.Command("ln", "-s", serviceFilePath, target).Run()
 }
-
