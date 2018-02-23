@@ -263,6 +263,7 @@ other options are ignored.
 		config.Cgroups.Resources.MemoryReservation = *r.Memory.Reservation
 		config.Cgroups.Resources.MemorySwap = *r.Memory.Swap
 		config.Cgroups.Resources.PidsLimit = r.Pids.Limit
+		config.Cgroups.Resources.MemoryWmarkRatio = -1
 
 		// Update Intel RDT
 		l3CacheSchema := context.String("l3-cache-schema")

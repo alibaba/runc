@@ -119,6 +119,24 @@ func (s *MemoryGroup) Set(path string, cgroup *configs.Cgroup) error {
 		return err
 	}
 
+	if v := cgroup.Resources.MemoryForceEmptyCtl; v != -1 {
+		if err := writeFileIfExist(path, "memory.force_empty_ctl", strconv.FormatInt(v, 10)); err != nil {
+			return err
+		}
+	}
+
+	if v := cgroup.Resources.MemoryWmarkRatio; v >= 0 && v <= 100 {
+		if err := writeFileIfExist(path, "memory.wmark_ratio", strconv.FormatInt(v, 10)); err != nil {
+			return err
+		}
+	}
+
+	if v := cgroup.Resources.MemoryExtraInBytes; v > 0 {
+		if err := writeFileIfExist(path, "memory.extra_in_bytes", strconv.FormatInt(v, 10)); err != nil {
+			return err
+		}
+	}
+
 	if cgroup.Resources.KernelMemory != 0 {
 		if err := setKernelMemory(path, cgroup.Resources.KernelMemory); err != nil {
 			return err

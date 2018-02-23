@@ -366,6 +366,20 @@ func writeFile(dir, file, data string) error {
 	return nil
 }
 
+func writeFileIfExist(dir, file, data string) error {
+	if dir == "" {
+		return writeFile(dir, file, data)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, file)); err != nil {
+		if !os.IsExist(err) {
+			return nil
+		}
+	}
+
+	return writeFile(dir, file, data)
+}
+
 func readFile(dir, file string) (string, error) {
 	data, err := ioutil.ReadFile(filepath.Join(dir, file))
 	return string(data), err
