@@ -57,6 +57,18 @@ type Resources struct {
 	// Kernel memory limit for TCP use (in bytes)
 	KernelMemoryTCP int64 `json:"kernel_memory_tcp"`
 
+	// MemoryWmarkRatio is an integer value representing this container's memory low water mark percentage.
+	// The value of memory low water mark is memory.limit_in_bytes * MemoryWmarkRatio.
+	// The range is in [0, 100].
+	MemoryWmarkRatio int64 `json:"memory_wmark_ratio"`
+
+	// MemoryExtra is an integer value representing this container's memory high water mark percentage.
+	// The range is in [0, 100].
+	MemoryExtraInBytes int64 `json:"memory_extra_in_bytes"`
+
+	// MemoryForceEmptyCtl represents whether to reclaim the page cache when deleting cgroup
+	MemoryForceEmptyCtl int64 `json:"memory_force_empty_ctl"`
+
 	// CPU shares (relative weight vs. other containers)
 	CpuShares uint64 `json:"cpu_shares"`
 
