@@ -1,6 +1,7 @@
 package richcontainer
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/opencontainers/runc/prehook"
+	"github.com/opencontainers/runc/utils"
 )
 
 const (
@@ -42,6 +44,29 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	}
 
 	cmd := spec.Process.Args
+
+	if len(cmd) == 0 {
+		return errors.New("no cmd set in process of container runtime spec")
+	}
+
+	//find PATH in env
+	sysPaths := []string{}
+
+	for _, env := range spec.Process.Env {
+		kvs := strings.Split(env, "=")
+		if len(kvs) == 2 && kvs[0] == "PATH" {
+			sysPaths = strings.Split(kvs[1], ":")
+			break
+		}
+	}
+
+	path := cmd[0]
+	abPath, err := utils.FindAbPathInRootfs(path, rootfs, sysPaths)
+	if err != nil {
+		return err
+	}
+
+	cmd[0] = abPath
 
 	config := &systemdConfig{
 		unit: &systemdUnitConfig{
