@@ -2,12 +2,22 @@ package richcontainer
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/opencontainers/runc/prehook"
 	"github.com/opencontainers/runc/utils"
+)
+
+const (
+	richModeEnv         = "rich_mode=true"
+	richModeLaunchEnv   = "rich_mode_launch_manner"
+	rich_mode_script    = "initscript"
+	persistentEnvShFile = "/etc/profile.d/pouchenv.sh"
+	persistentEnvShDir  = "/etc/profile.d"
 )
 
 var (
@@ -21,8 +31,13 @@ func init() {
 			if !isRichMode(spec) {
 				return nil
 			}
+
 			launcher, err := getRichModeLauncher(spec)
 			if err != nil {
+				return err
+			}
+
+			if err = commonHook(opt, spec); err != nil {
 				return err
 			}
 
@@ -78,12 +93,6 @@ func GetDefaultLauncher() RichContainerLauncher {
 	return nil
 }
 
-const (
-	richModeEnv       = "rich_mode=true"
-	richModeLaunchEnv = "rich_mode_launch_manner"
-	rich_mode_script  = "initscript"
-)
-
 func isRichMode(spec *specs.Spec) bool {
 	envs := spec.Process.Env
 	for _, env := range envs {
@@ -122,4 +131,36 @@ func getRichModeLauncher(spec *specs.Spec) (RichContainerLauncher, error) {
 	}
 
 	return launcher, nil
+}
+
+func commonHook(opt *prehook.HookOptions, spec *specs.Spec) error {
+	//persistent env to /etc/profile.d/pouchenv.sh
+	rootfs := opt.RootfsDir
+	envMap := map[string]string{}
+
+	for _, env := range spec.Process.Env {
+		kvs := strings.Split(env, "=")
+		if len(kvs) == 2 {
+			envMap[kvs[0]] = kvs[1]
+		}
+	}
+
+	//mkdir $roofs/etc/profile.d/
+	err := os.MkdirAll(filepath.Join(rootfs, persistentEnvShDir), 0x755)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(filepath.Join(rootfs, persistentEnvShFile), os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0x755)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	for k, v := range envMap {
+		f.WriteString(fmt.Sprintf("export %s=\"%s\"\n", k, v))
+	}
+
+	return nil
 }
