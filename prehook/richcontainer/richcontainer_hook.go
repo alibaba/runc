@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	richModeEnv       = "rich_mode=true"
-	richModeLaunchEnv = "rich_mode_launch_manner"
-	rich_mode_script  = "initscript"
+	richModeEnv         = "rich_mode=true"
+	richModeLaunchEnv   = "rich_mode_launch_manner"
+	rich_mode_script    = "initscript"
 	persistentEnvShFile = "/etc/profile.d/pouchenv.sh"
 	persistentEnvShDir  = "/etc/profile.d"
 )
