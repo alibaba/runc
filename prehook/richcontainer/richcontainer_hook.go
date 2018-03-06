@@ -12,6 +12,14 @@ import (
 	"github.com/opencontainers/runc/utils"
 )
 
+const (
+	richModeEnv       = "rich_mode=true"
+	richModeLaunchEnv = "rich_mode_launch_manner"
+	rich_mode_script  = "initscript"
+	persistentEnvShFile = "/etc/profile.d/pouchenv.sh"
+	persistentEnvShDir  = "/etc/profile.d"
+)
+
 var (
 	log = utils.GetLogger()
 )
@@ -85,12 +93,6 @@ func GetDefaultLauncher() RichContainerLauncher {
 	return nil
 }
 
-const (
-	richModeEnv       = "rich_mode=true"
-	richModeLaunchEnv = "rich_mode_launch_manner"
-	rich_mode_script  = "initscript"
-)
-
 func isRichMode(spec *specs.Spec) bool {
 	envs := spec.Process.Env
 	for _, env := range envs {
@@ -130,11 +132,6 @@ func getRichModeLauncher(spec *specs.Spec) (RichContainerLauncher, error) {
 
 	return launcher, nil
 }
-
-const (
-	persistentEnvShFile = "/etc/profile.d/pouchenv.sh"
-	persistentEnvShDir  = "/etc/profile.d"
-)
 
 func commonHook(opt *prehook.HookOptions, spec *specs.Spec) error {
 	//persistent env to /etc/profile.d/pouchenv.sh
