@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 )
 
-func FindAbPathInRootfs(path string, rootfs string, sys_paths []string) (string, error) {
+func FindAbPathInRootfs(path string, rootfs string, sysPaths []string) (string, error) {
 	if filepath.IsAbs(path) {
 		return path, nil
 	}
 
-	for _, s_path := range sys_paths {
+	for _, s_path := range sysPaths {
 		real_path := filepath.Join(rootfs, s_path)
 		_, err := os.Stat(filepath.Join(real_path, path))
 

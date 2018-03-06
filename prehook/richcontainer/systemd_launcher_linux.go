@@ -46,22 +46,22 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	cmd := spec.Process.Args
 
 	if len(cmd) == 0 {
-		return errors.New("not set cmd")
+		return errors.New("no cmd set in process of container runtime spec")
 	}
 
 	//find PATH in env
-	sys_paths := []string{}
+	sysPaths := []string{}
 
 	for _, env := range spec.Process.Env {
 		kvs := strings.Split(env, "=")
 		if len(kvs) == 2 && kvs[0] == "PATH" {
-			sys_paths = strings.Split(kvs[1], ":")
+			sysPaths = strings.Split(kvs[1], ":")
 			break
 		}
 	}
 
 	path := cmd[0]
-	abPath, err := utils.FindAbPathInRootfs(path, rootfs, sys_paths)
+	abPath, err := utils.FindAbPathInRootfs(path, rootfs, sysPaths)
 	if err != nil {
 		return err
 	}
