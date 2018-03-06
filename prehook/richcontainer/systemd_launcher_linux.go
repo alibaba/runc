@@ -1,13 +1,13 @@
 package richcontainer
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"errors"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
@@ -52,7 +52,7 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	//find PATH in env
 	sys_paths := []string{}
 
-	for _,env := range spec.Process.Env {
+	for _, env := range spec.Process.Env {
 		kvs := strings.Split(env, "=")
 		if len(kvs) == 2 && kvs[0] == "PATH" {
 			sys_paths = strings.Split(kvs[1], ":")
@@ -61,7 +61,7 @@ func (l *systemdLauncher) Launch(opt *prehook.HookOptions, spec *specs.Spec) err
 	}
 
 	path := cmd[0]
-	abPath,err := utils.FindAbPathInRootfs(path, rootfs, sys_paths)
+	abPath, err := utils.FindAbPathInRootfs(path, rootfs, sys_paths)
 	if err != nil {
 		return err
 	}
