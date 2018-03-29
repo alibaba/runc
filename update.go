@@ -253,6 +253,7 @@ other options are ignored.
 		config.Cgroups.Resources.MemoryReservation = *r.Memory.Reservation
 		config.Cgroups.Resources.MemorySwap = *r.Memory.Swap
 		config.Cgroups.Resources.PidsLimit = r.Pids.Limit
+		config.Cgroups.Resources.MemoryWmarkRatio = -1
 
 		return container.Set(config)
 	},

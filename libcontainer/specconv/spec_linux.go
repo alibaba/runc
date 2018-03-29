@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -281,6 +282,27 @@ func createCgroupConfig(opts *CreateOpts) (*configs.Cgroup, error) {
 
 	c := &configs.Cgroup{
 		Resources: &configs.Resources{},
+	}
+
+	// deal with data passed in spec annotations
+	if spec.Annotations != nil {
+		if v, ok := spec.Annotations["__memory_wmark_ratio"]; ok {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				c.Resources.MemoryWmarkRatio = n
+			}
+		}
+
+		if v, ok := spec.Annotations["__memory_extra_in_bytes"]; ok {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				c.Resources.MemoryExtraInBytes = n
+			}
+		}
+
+		if v, ok := spec.Annotations["__memory_force_empty_ctl"]; ok {
+			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+				c.Resources.MemoryForceEmptyCtl = n
+			}
+		}
 	}
 
 	if spec.Linux != nil && spec.Linux.CgroupsPath != "" {
