@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 
+	"github.com/opencontainers/runc/prehook"
 	"github.com/urfave/cli"
 )
 
@@ -73,6 +74,21 @@ command(s) that get executed on start, edit the args parameter of the spec. See
 		if err != nil {
 			return err
 		}
+
+		//pre hook
+		opt, err := prehook.CreateHookOptions(context, spec)
+		if err != nil {
+			return err
+		}
+
+		log.Infof("container %s,rootfs dir is %s\n", opt.ID, opt.RootfsDir)
+
+		err = prehook.PreHook(opt, spec)
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
+
 		status, err := startContainer(context, spec, CT_ACT_RUN, nil)
 		if err == nil {
 			// exit with the container's exit status so any external supervisor is
