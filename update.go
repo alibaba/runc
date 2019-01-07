@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/docker/go-units"
 	"github.com/opencontainers/runc/libcontainer/configs"
@@ -49,7 +50,27 @@ The accepted format is as follow (unchanged values can be omitted):
     "mems": ""
   },
   "blockIO": {
-    "weight": 0
+    "weight": 0,
+    "throttleReadBpsDevice": [{
+      "major",
+      "minor",
+      "rate"
+    }],
+    "throttleWriteBpsDevice": [{
+      "major",
+      "minor",
+      "rate"
+    }],
+    "throttleReadIOPSDevice": [{
+      "major",
+      "minor",
+      "rate"
+    }],
+    "throttleWriteIOPSDevice": [{
+      "major",
+      "minor",
+      "rate"
+    }]
   }
 }
 
@@ -61,6 +82,22 @@ other options are ignored.
 		cli.IntFlag{
 			Name:  "blkio-weight",
 			Usage: "Specifies per cgroup weight, range is from 10 to 1000",
+		},
+		cli.StringSliceFlag{
+			Name:  "device-read-bps",
+			Usage: "Limit read rate (bytes per second) from a device, such as \"8:0 1048576\"",
+		},
+		cli.StringSliceFlag{
+			Name:  "device-write-bps",
+			Usage: "Limit write rate (bytes per second) to a device, such as \"8:0 1048576\"",
+		},
+		cli.StringSliceFlag{
+			Name:  "device-read-iops",
+			Usage: "Limit read rate (IO per second) from a device, such as \"8:0 5000\"",
+		},
+		cli.StringSliceFlag{
+			Name:  "device-write-iops",
+			Usage: "Limit write rate (IO per second) to a device, such as \"8:0 5000\"",
 		},
 		cli.StringFlag{
 			Name:  "cpu-period",
@@ -181,6 +218,23 @@ other options are ignored.
 			if val := context.Int("blkio-weight"); val != 0 {
 				r.BlockIO.Weight = u16Ptr(uint16(val))
 			}
+			for _, pair := range []struct {
+				opt  string
+				dest *[]specs.LinuxThrottleDevice
+			}{
+				{"device-read-bps", &r.BlockIO.ThrottleReadBpsDevice},
+				{"device-write-bps", &r.BlockIO.ThrottleWriteBpsDevice},
+				{"device-read-iops", &r.BlockIO.ThrottleReadIOPSDevice},
+				{"device-write-iops", &r.BlockIO.ThrottleWriteIOPSDevice},
+			} {
+				if val := context.StringSlice(pair.opt); len(val) > 0 {
+					var err error
+					*pair.dest, err = stringSliceToThrottleDevice(val)
+					if err != nil {
+						return fmt.Errorf("invalid value for %s: %s", pair.opt, err)
+					}
+				}
+			}
 			if val := context.String("cpuset-cpus"); val != "" {
 				r.CPU.Cpus = val
 			}
@@ -264,6 +318,20 @@ other options are ignored.
 		config.Cgroups.Resources.MemorySwap = *r.Memory.Swap
 		config.Cgroups.Resources.PidsLimit = r.Pids.Limit
 
+		for _, pair := range []struct {
+			dest *[]*configs.ThrottleDevice
+			src  []specs.LinuxThrottleDevice
+		}{
+			{&config.Cgroups.Resources.BlkioThrottleReadBpsDevice, r.BlockIO.ThrottleReadBpsDevice},
+			{&config.Cgroups.Resources.BlkioThrottleWriteBpsDevice, r.BlockIO.ThrottleWriteBpsDevice},
+			{&config.Cgroups.Resources.BlkioThrottleReadIOPSDevice, r.BlockIO.ThrottleReadIOPSDevice},
+			{&config.Cgroups.Resources.BlkioThrottleWriteIOPSDevice, r.BlockIO.ThrottleWriteIOPSDevice},
+		} {
+			for _, td := range pair.src {
+				*pair.dest = append(*pair.dest, configs.NewThrottleDevice(td.Major, td.Minor, td.Rate))
+			}
+		}
+
 		// Update Intel RDT
 		l3CacheSchema := context.String("l3-cache-schema")
 		memBwSchema := context.String("mem-bw-schema")
@@ -301,4 +369,41 @@ other options are ignored.
 
 		return container.Set(config)
 	},
+}
+
+func stringSliceToThrottleDevice(ss []string) ([]specs.LinuxThrottleDevice, error) {
+	tds := make([]specs.LinuxThrottleDevice, 0, len(ss))
+	for _, v := range ss {
+		parts := strings.SplitN(strings.TrimSpace(v), " ", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("failed to parse throttle device %s: the expected format is 'major:minor rate'", v)
+		}
+		devs := strings.SplitN(parts[0], ":", 2)
+		if len(devs) != 2 {
+			return nil, fmt.Errorf("failed to parse throttle device %s: the expected format is 'major:minor rate'", v)
+		}
+
+		td := specs.LinuxThrottleDevice{}
+		for _, item := range []struct {
+			value string
+			dest  *int64
+		}{
+			{devs[0], &td.Major},
+			{devs[1], &td.Minor},
+		} {
+			v, err := strconv.ParseInt(item.value, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			*item.dest = v
+		}
+		rate, err := strconv.ParseUint(parts[1], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		td.Rate = rate
+
+		tds = append(tds, td)
+	}
+	return tds, nil
 }

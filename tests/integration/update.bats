@@ -86,6 +86,30 @@ function check_cgroup_value() {
     [ "$status" -eq 0 ]
     check_cgroup_value $CGROUP_BLKIO "blkio.weight" 500
 
+    blk_deivce=$(lsblk | grep [sv]da | grep disk | awk '{print $2}')
+    blk_major=$(echo $blk_deivce | awk -F ':' '{print $1}')
+    blk_minor=$(echo $blk_deivce | awk -F ':' '{print $2}')
+
+    # update device-read-bps
+    runc update test_update --device-read-bps "$blk_deivce 1048576"
+    [ "$status" -eq 0 ]
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_bps_device" "$blk_major:$blk_minor 1048576"
+
+    # update device-read-iops
+    runc update test_update --device-read-iops "$blk_deivce 2000"
+    [ "$status" -eq 0 ]
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_iops_device" "$blk_major:$blk_minor 2000"
+
+    # update device-write-bps
+    runc update test_update --device-write-bps "$blk_deivce 2097152"
+    [ "$status" -eq 0 ]
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_bps_device" "$blk_major:$blk_minor 2097152"
+
+    # update device-write-iops
+    runc update test_update --device-write-iops "$blk_deivce 3000"
+    [ "$status" -eq 0 ]
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_iops_device" "$blk_major:$blk_minor 3000"
+
     # update cpu-period
     runc update test_update --cpu-period 900000
     [ "$status" -eq 0 ]
@@ -183,7 +207,35 @@ function check_cgroup_value() {
     "cpus": "0"
   },
   "blockIO": {
-    "weight": 1000
+    "weight": 1000,
+    "throttleReadBpsDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleReadIOPSDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleWriteBpsDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleWriteIOPSDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ]
   },
   "pids": {
     "limit": 20
@@ -192,6 +244,10 @@ function check_cgroup_value() {
 EOF
     [ "$status" -eq 0 ]
     check_cgroup_value $CGROUP_BLKIO "blkio.weight" 1000
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_bps_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_iops_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_bps_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_iops_device" ""
     check_cgroup_value $CGROUP_CPU "cpu.cfs_period_us" 1000000
     check_cgroup_value $CGROUP_CPU "cpu.cfs_quota_us" 500000
     check_cgroup_value $CGROUP_CPU "cpu.shares" 100
@@ -204,11 +260,17 @@ EOF
 
     # redo all the changes at once
     runc update test_update --blkio-weight 500 \
+        --device-read-bps "$blk_deivce 1048576" --device-read-iops "$blk_deivce 2000" \
+        --device-write-bps "$blk_deivce 2097152" --device-write-iops "$blk_deivce 3000" \
         --cpu-period 900000 --cpu-quota 600000 --cpu-share 200 --memory 67108864 \
         --memory-reservation 33554432 --kernel-memory 50331648 --kernel-memory-tcp 41943040 \
         --pids-limit 10
     [ "$status" -eq 0 ]
     check_cgroup_value $CGROUP_BLKIO "blkio.weight" 500
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_bps_device" "$blk_major:$blk_minor 1048576"
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_iops_device" "$blk_major:$blk_minor 2000"
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_bps_device" "$blk_major:$blk_minor 2097152"
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_iops_device" "$blk_major:$blk_minor 3000"
     check_cgroup_value $CGROUP_CPU "cpu.cfs_period_us" 900000
     check_cgroup_value $CGROUP_CPU "cpu.cfs_quota_us" 600000
     check_cgroup_value $CGROUP_CPU "cpu.shares" 200
@@ -219,7 +281,7 @@ EOF
     check_cgroup_value $CGROUP_PIDS "pids.max" 10
 
     # reset to initial test value via json file
-    DATA=$(cat <<"EOF"
+    DATA=$(cat <<EOF
 {
   "memory": {
     "limit": 33554432,
@@ -234,7 +296,35 @@ EOF
     "cpus": "0"
   },
   "blockIO": {
-    "weight": 1000
+    "weight": 1000,
+    "throttleReadBpsDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleReadIOPSDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleWriteBpsDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ],
+    "throttleWriteIOPSDevice": [
+        {
+            "major": $blk_major,
+            "minor": $blk_minor,
+            "rate": 0
+        }
+    ]
   },
   "pids": {
     "limit": 20
@@ -247,6 +337,10 @@ EOF
     runc update  -r $BATS_TMPDIR/runc-cgroups-integration-test.json test_update
     [ "$status" -eq 0 ]
     check_cgroup_value $CGROUP_BLKIO "blkio.weight" 1000
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_bps_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.read_iops_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_bps_device" ""
+    check_cgroup_value $CGROUP_BLKIO "blkio.throttle.write_iops_device" ""
     check_cgroup_value $CGROUP_CPU "cpu.cfs_period_us" 1000000
     check_cgroup_value $CGROUP_CPU "cpu.cfs_quota_us" 500000
     check_cgroup_value $CGROUP_CPU "cpu.shares" 100
